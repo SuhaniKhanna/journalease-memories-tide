@@ -1,6 +1,6 @@
-// src/components/JournalEntry.tsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// src/components/EditEntry.tsx
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { DateTimePicker } from "@/components/date-picker";
 import { useJournal } from "@/contexts/journal-context";
+import { ArrowLeft } from "lucide-react";
 
-const JournalEntry = () => {
+const EditEntry = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addEntry } = useJournal();
+  const { getEntry, updateEntry } = useJournal();
+  
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [date, setDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (id) {
+      const entry = getEntry(id);
+      if (entry) {
+        setTitle(entry.title);
+        setContent(entry.content);
+        setDate(new Date(entry.createdAt));
+      } else {
+        toast.error("Journal entry not found");
+        navigate("/past-entries");
+      }
+    }
+  }, [id, getEntry, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!id) return;
     
     if (!title.trim()) {
       toast.error("Please enter a title for your journal entry");
@@ -33,17 +52,16 @@ const JournalEntry = () => {
     setIsSubmitting(true);
 
     try {
-      // Now this will call our API through the context
-      await addEntry({
+      await updateEntry(id, {
         title,
         content,
         createdAt: date,
       });
       
-      toast.success("Journal entry saved successfully!");
-      navigate("/past-entries");
+      toast.success("Journal entry updated successfully!");
+      navigate(`/entry/${id}`);
     } catch (error) {
-      toast.error("Failed to save journal entry. Please try again.");
+      toast.error("Failed to update journal entry. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -51,9 +69,15 @@ const JournalEntry = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">New Journal Entry</h1>
-        <p className="text-muted-foreground">Document your thoughts and experiences</p>
+      <div className="flex flex-row items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => navigate(`/entry/${id}`)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-3xl font-bold tracking-tight">Edit Journal Entry</h1>
       </div>
 
       <Card>
@@ -81,11 +105,11 @@ const JournalEntry = () => {
             />
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>
+            <Button variant="outline" onClick={() => navigate(`/entry/${id}`)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Entry"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </CardFooter>
         </form>
@@ -94,4 +118,4 @@ const JournalEntry = () => {
   );
 };
 
-export default JournalEntry;
+export default EditEntry;

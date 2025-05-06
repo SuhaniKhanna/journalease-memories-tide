@@ -1,4 +1,4 @@
-
+// src/components/PastEntries.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,27 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash, Edit, Eye } from "lucide-react";
 import { useJournal } from "@/contexts/journal-context";
+import { toast } from "sonner";
 
 const PastEntries = () => {
   const navigate = useNavigate();
-  const { entries } = useJournal();
+  const { entries, loading, deleteEntry } = useJournal();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   
   // Filter and sort entries based on search query and sort option
   const filteredEntries = entries
@@ -32,6 +46,27 @@ const PastEntries = () => {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
     });
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEntry(id);
+      toast.success("Journal entry deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete journal entry");
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedEntryId(null);
+    }
+  };
+
+  const confirmDelete = (id: string) => {
+    setSelectedEntryId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  if (loading) {
+    return <div className="flex justify-center p-10">Loading entries...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -90,15 +125,55 @@ const PastEntries = () => {
               <CardContent>
                 <p className="line-clamp-3">{entry.content}</p>
               </CardContent>
-              <CardFooter>
-                <Button variant="outline" size="sm">
+              <CardFooter className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate(`/entry/${entry.id}`)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
                   Read More
                 </Button>
+                <div className="space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/edit-entry/${entry.id}`)}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => confirmDelete(entry.id)}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your journal entry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => selectedEntryId && handleDelete(selectedEntryId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

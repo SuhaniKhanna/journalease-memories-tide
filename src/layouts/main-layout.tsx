@@ -7,7 +7,7 @@ interface MainLayoutProps {
   sidebar: React.ReactNode;
 }
 
-export function MainLayout({ sidebar }: MainLayoutProps) {
+export default function MainLayout({ sidebar }: MainLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

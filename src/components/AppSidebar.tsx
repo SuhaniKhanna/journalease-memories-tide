@@ -25,7 +25,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-export function AppSidebar() {
+export default function AppSidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

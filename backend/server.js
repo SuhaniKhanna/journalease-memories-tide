@@ -1,37 +1,38 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import journalRoutes from './routes/journalRoutes.js';
 
-dotenv.config(); // Load .env file for environment variables
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000; // Set port from environment or default to 5000
 
-// Middleware
-app.use(cors()); // Enable CORS for cross-origin requests
-app.use(express.json()); // Parse JSON request bodies
+// Enable CORS for frontend requests
+app.use(cors());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
+// Parse JSON request bodies
+app.use(express.json());
+
+// Mount journal routes
+app.use('/api/journals', journalRoutes);
+
+// Get MongoDB URI from environment or fallback to local
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/journal_app';
+
+// Connect to MongoDB
+mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => {
-  console.log("✅ MongoDB connected");
-}).catch(err => {
-  console.error("❌ MongoDB connection error:", err);
-});
-
-// Mount the journal routes under the '/api/journal' path
-app.use('/api/journal', journalRoutes);
-
-// Route to test the backend
-app.get('/', (req, res) => {
-  res.send('✅ Backend is working!');
-});
+})
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Start the server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server started on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+
+export default app;
